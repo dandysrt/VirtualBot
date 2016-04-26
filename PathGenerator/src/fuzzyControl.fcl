@@ -1,0 +1,67 @@
+
+FUNCTION_BLOCK wall
+
+VAR_INPUT				// Define input variables
+	left : REAL;
+	right : REAL;
+END_VAR
+
+VAR_OUTPUT				// Define output variable
+	heading : REAL;
+END_VAR
+
+FUZZIFY left			
+    TERM extremely_close := (0, 1) (20, 0);
+	TERM very_close := (0, 0) (20, 1) (30, 0);
+	TERM close := (20, 0) (75, 1) (130, 0);
+	TERM far := (75, 0) (130, 1) (175, 0);
+    TERM very_far := (130, 0) (175, 1);
+END_FUZZIFY
+
+FUZZIFY right		
+    TERM extremely_close := (0, 1) (20, 0);
+	TERM very_close := (0, 0) (20, 1) (30, 0);
+	TERM close := (20, 0) (75, 1) (130, 0);
+	TERM far := (75, 0) (130, 1) (175, 0);
+    TERM very_far := (130, 0) (175, 1);
+END_FUZZIFY
+
+DEFUZZIFY heading
+        TERM right := (0, 1) (2, 0);
+        TERM slight_right := (0, 0) (2, 1) (75, 0);
+        TERM straight := (60, 0) (90, 1) (120, 0);
+        TERM slight_left := (90, 0) (178, 1) (180, 0);
+        TERM left := (178, 0) (180, 1); 
+	METHOD : COG;                                             // Use 'Center Of Gravity' defuzzification method
+	DEFAULT := 90;		                                  // Default value is 0 (if no rule activates defuzzifier)
+END_DEFUZZIFY
+
+RULEBLOCK No1
+	AND : MIN;			// Use 'min' for 'and' (also implicit use 'max' for 'or' to fulfill DeMorgan's Law)
+	ACT : MIN;			// Use 'min' activation method
+	ACCU : MAX;			// Use 'max' accumulation method
+	
+		RULE 1 : IF left IS extremely_close THEN heading IS right;
+		RULE 2 : IF left IS very_close AND right IS NOT close THEN heading IS right;
+		RULE 3 : IF left IS close AND right IS far OR right IS very_far THEN heading IS right;
+
+		RULE 4 : IF right IS extremely_close THEN heading IS left;
+		RULE 5 : IF right IS  very_close AND left IS NOT close THEN heading IS left;
+		RULE 6 : IF right IS close AND left IS far OR left IS very_far THEN heading IS left;
+		
+		RULE 7 : IF left IS extremely_close AND right IS very_close THEN heading IS slight_right;
+		RULE 8 : IF left IS very_close AND right IS close THEN heading IS slight_right;
+		RULE 9 : IF right IS extremely_close AND left IS very_close THEN heading IS slight_left;
+		RULE 10 : IF right IS very_close AND right IS close THEN heading IS slight_left;
+		
+		RULE 11 : IF left IS extremely_close AND right IS extremely_close THEN heading IS straight;
+		RULE 12 : IF left IS very_close AND right IS very_close THEN heading IS straight;
+		RULE 12 : IF left IS close AND right IS close THEN heading IS straight;
+		RULE 13 : IF left IS far AND right IS far THEN heading IS straight;
+		RULE 14 : IF left IS very_far AND right IS very_far THEN heading IS straight;
+		RULE 15 : IF left IS very_close AND right IS very_close AND right IS close THEN heading IS slight_right;
+		RULE 16 : IF right IS very_close AND left IS very_close AND left IS close THEN heading IS slight_left;
+		
+END_RULEBLOCK
+
+END_FUNCTION_BLOCK
